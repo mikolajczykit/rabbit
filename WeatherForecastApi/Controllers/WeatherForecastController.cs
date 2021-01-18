@@ -20,16 +20,16 @@ namespace WeatherForecastApi.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
 
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly ISendEndpointProvider _sendEndpointProvider;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IPublishEndpoint publishEndpoint)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, ISendEndpointProvider sendEndpointProvider)
         {
             _logger = logger;
-            _publishEndpoint = publishEndpoint;
+            _sendEndpointProvider = sendEndpointProvider;
         }
 
         [HttpGet]
-        public IEnumerable<WeatherForecast> Get()
+        public async Task<IEnumerable<WeatherForecast>> Get()
         {
             var rng = new Random();
             IEnumerable<WeatherForecast> data = Enumerable.Range(1, 5).Select(index => new WeatherForecast
@@ -40,13 +40,24 @@ namespace WeatherForecastApi.Controllers
             })
             .ToArray();
 
-            _publishEndpoint.Publish<WeatherForecastUpdated>(new 
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:test-queue"));
+
+            await endpoint.Send<WeatherForecastUpdated>(new
             {
                 Date = DateTime.Now,
                 TemperatureC = 12,
                 TemperatureF = 18,
                 Summary = "Rather rainy weather!"
             });
+
+
+            //_publishEndpoint..Publish<WeatherForecastUpdated>(new 
+            //{
+            //    Date = DateTime.Now,
+            //    TemperatureC = 12,
+            //    TemperatureF = 18,
+            //    Summary = "Rather rainy weather!"
+            //});
 
             return data;
         }

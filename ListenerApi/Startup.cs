@@ -32,11 +32,12 @@ namespace ListenerApi
             {
                 x.AddConsumer<WeatherConsumer>();
 
-                x.UsingInMemory((context, cfg) =>
+                x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.TransportConcurrencyLimit = 100;
-
-                    cfg.ConfigureEndpoints(context);
+                    cfg.ReceiveEndpoint("test-queue", e =>
+                    {
+                        e.ConfigureConsumer<WeatherConsumer>(context);
+                    });
                 });
             });
 

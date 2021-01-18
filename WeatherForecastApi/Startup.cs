@@ -28,15 +28,20 @@ namespace WeatherForecastApi
         {
             services.AddControllers();
 
+            //services.AddMassTransit(x =>
+            //{
+            //    x.AddConsumer<WeatherConsumer>();
+            //    x.UsingInMemory((context, cfg) =>
+            //    {
+            //        cfg.TransportConcurrencyLimit = 100;
+
+            //        cfg.ConfigureEndpoints(context);
+            //    });
+            //});
+
             services.AddMassTransit(x =>
             {
-                x.AddConsumer<WeatherConsumer>();
-                x.UsingInMemory((context, cfg) =>
-                {
-                    cfg.TransportConcurrencyLimit = 100;
-
-                    cfg.ConfigureEndpoints(context);
-                });
+                x.UsingRabbitMq();
             });
 
             services.AddMassTransitHostedService();
