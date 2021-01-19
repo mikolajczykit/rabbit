@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ namespace WeatherForecastApi.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
+        private readonly IMapper _mapper;
+
         private static readonly string[] Summaries = new[]
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -22,10 +25,13 @@ namespace WeatherForecastApi.Controllers
 
         private readonly ISendEndpointProvider _sendEndpointProvider;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, ISendEndpointProvider sendEndpointProvider)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger,
+            ISendEndpointProvider sendEndpointProvider, 
+            IMapper mapper)
         {
             _logger = logger;
             _sendEndpointProvider = sendEndpointProvider;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -41,23 +47,8 @@ namespace WeatherForecastApi.Controllers
             .ToArray();
 
             var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:test-queue"));
-
-            await endpoint.Send<WeatherForecastUpdated>(new
-            {
-                Date = DateTime.Now,
-                TemperatureC = 12,
-                TemperatureF = 18,
-                Summary = "Rather rainy weather!"
-            });
-
-
-            //_publishEndpoint..Publish<WeatherForecastUpdated>(new 
-            //{
-            //    Date = DateTime.Now,
-            //    TemperatureC = 12,
-            //    TemperatureF = 18,
-            //    Summary = "Rather rainy weather!"
-            //});
+            var message = new WeatherForecastUpdatedList(data.Select(x => _mapper.Map<WeatherForecastUpdated>(x)).ToList());
+            await endpoint.Send<WeatherForecastUpdatedList>(message);
 
             return data;
         }
