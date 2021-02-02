@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using Contracts;
@@ -48,7 +49,13 @@ namespace WeatherForecastApi.Controllers
 
             var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:test-queue"));
             var message = new WeatherForecastUpdatedList(data.Select(x => _mapper.Map<WeatherForecastUpdated>(x)).ToList());
-            await endpoint.Send<WeatherForecastUpdatedList>(message);
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+            cancellationTokenSource.CancelAfter(30000);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await endpoint.Send<WeatherForecastUpdatedList>(message, cancellationToken);
 
             return data;
         }

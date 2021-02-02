@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MassTransit;
 using AutoMapper;
+using GreenPipes;
 
 namespace WeatherForecastApi
 {
@@ -43,7 +44,17 @@ namespace WeatherForecastApi
 
             services.AddMassTransit(x =>
             {
-                x.UsingRabbitMq();
+                x.UsingRabbitMq((context, cfg) =>
+                {
+                    
+                    cfg.UseCircuitBreaker(cb =>
+                    {
+                        cb.TrackingPeriod = TimeSpan.FromMinutes(1);
+                        cb.ActiveThreshold = 1;
+                        cb.ResetInterval = TimeSpan.FromMinutes(5);
+                    });
+                });
+                    //x.UsingRabbitMq();
             });
 
             services.AddMassTransitHostedService();
