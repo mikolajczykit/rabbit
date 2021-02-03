@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using GreenPipes;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -12,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace ListenerApi
+namespace SmogInformationApi
 {
     public class Startup
     {
@@ -26,21 +28,21 @@ namespace ListenerApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(Startup));
             services.AddControllers();
-
             services.AddMassTransit(x =>
             {
-                x.AddConsumer<WeatherConsumer>();
-                x.AddConsumer<SmogConsumer>();
-
                 x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.ReceiveEndpoint("test-queue", e =>
+
+                    cfg.UseCircuitBreaker(cb =>
                     {
-                        e.ConfigureConsumer<WeatherConsumer>(context);
-                        e.ConfigureConsumer<SmogConsumer>(context);
+                        cb.TrackingPeriod = TimeSpan.FromMinutes(1);
+                        cb.ActiveThreshold = 1;
+                        cb.ResetInterval = TimeSpan.FromMinutes(5);
                     });
                 });
+                //x.UsingRabbitMq();
             });
 
             services.AddMassTransitHostedService();
